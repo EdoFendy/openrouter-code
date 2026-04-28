@@ -34,7 +34,8 @@
     "permissions"
   ],
   "bin": {
-    "or-code": "./dist/cli.js"
+    "or-code": "./dist/cli.js",
+    "orcode": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -47,6 +48,7 @@
     "dev": "node --max-old-space-size=4096 ./node_modules/.bin/tsx src/cli.ts",
     "start": "node --max-old-space-size=4096 dist/cli.js",
     "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "test": "vitest run",

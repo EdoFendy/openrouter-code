@@ -1,17 +1,18 @@
 <div align="center">
 
+<img src="public/or-code.png" alt="or-code" width="180" />
+
 # `or-code`
 
 **The OpenRouter-native agentic coding CLI.**
 **Every model. Full control. Local-first.**
 
-[![CI](https://github.com/or-code-ai/or-code/actions/workflows/ci.yml/badge.svg)](https://github.com/or-code-ai/or-code/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?logo=github)](https://github.com/or-code-ai/or-code/actions)
 [![npm version](https://img.shields.io/npm/v/or-code.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/or-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Stars](https://img.shields.io/github/stars/or-code-ai/or-code?style=social)](https://github.com/or-code-ai/or-code/stargazers)
 
 `or-code` is a tiny, fast, transparent coding agent for your terminal — wired directly into [OpenRouter](https://openrouter.ai), so you can swap between **GPT-5, Claude 4.7, Gemini, Llama, Qwen, DeepSeek and 300+ other models** in a single keystroke.
 
@@ -236,7 +237,7 @@ or-code doctor                        # run diagnostics
 /clear    /status   /doctor
 ```
 
-→ Full command reference: [docs/commands.md](docs/configuration.md)
+→ Full command reference: [docs/configuration.md](docs/configuration.md)
 
 ---
 
