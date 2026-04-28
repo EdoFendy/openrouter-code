@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, statSync } from "node:fs";
-import { ensureConfigDirs, loadConfig } from "./config.js";
+import { createInterface } from "node:readline";
+import { ensureConfigDirs, loadConfig, saveGlobalConfigPatch } from "./config.js";
 import { runOneShotCommand } from "./commands/cli.js";
 import { ModelRegistry } from "./openrouter/model-registry.js";
 import { ContextManager } from "./runtime/context-manager.js";
@@ -37,8 +38,35 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { config, paths } = await loadConfig({ cwd });
+  let { config, paths } = await loadConfig({ cwd });
   await ensureConfigDirs(paths);
+
+  if (!config.apiKey) {
+    process.stdout.write(
+      "\n  ┌─────────────────────────────────────────────────┐\n" +
+      "  │  or-code needs an OpenRouter API key to start.  │\n" +
+      "  │  Get one free at https://openrouter.ai/keys     │\n" +
+      "  └─────────────────────────────────────────────────┘\n\n"
+    );
+    const key = await new Promise<string>((resolve) => {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      rl.question("  Paste key (sk-or-...): ", (answer) => {
+        rl.close();
+        resolve(answer.trim());
+      });
+    });
+    if (key.startsWith("sk-or-") && key.length > 20) {
+      await saveGlobalConfigPatch(cwd, { apiKey: key });
+      config = { ...config, apiKey: key };
+      process.stdout.write("  ✓ Saved to ~/.orcode/config.json\n\n");
+    } else if (key) {
+      process.stdout.write("  Key format unexpected — saved anyway. Fix with /login <key> if calls fail.\n\n");
+      await saveGlobalConfigPatch(cwd, { apiKey: key });
+      config = { ...config, apiKey: key };
+    } else {
+      process.stdout.write("  No key entered. Use /login <key> inside the TUI.\n\n");
+    }
+  }
   const registry = new ModelRegistry(paths, config.modelCacheTtlMs);
   const sessionStore = new SessionStore({ sessionsDir: paths.sessionsDir });
 

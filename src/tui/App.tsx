@@ -71,6 +71,54 @@ export function App(props: AppProps): React.ReactElement {
   const lastEscAt = useRef<number>(0);
   const currentPrompt = useRef<string>("");
   const lastToolEventAtRef = useRef<number>(0);
+  const inPasteRef = useRef(false);
+  const pasteBufferRef = useRef("");
+  const prePasteInputRef = useRef("");
+  const inputRef = useRef("");
+
+  useEffect(() => { inputRef.current = input; }, [input]);
+
+  useEffect(() => {
+    if (!process.stdout.isTTY) return;
+    process.stdout.write("\x1b[?2004h");
+
+    const onData = (chunk: Buffer | string) => {
+      const str = typeof chunk === "string" ? chunk : chunk.toString("utf8");
+      if (!inPasteRef.current && str.includes("\x1b[200~")) {
+        inPasteRef.current = true;
+        prePasteInputRef.current = inputRef.current;
+        pasteBufferRef.current = "";
+        const after = str.slice(str.indexOf("\x1b[200~") + 6);
+        if (after.includes("\x1b[201~")) {
+          const pasted = after.slice(0, after.indexOf("\x1b[201~")).replace(/\r\n|\r/g, "\n");
+          inPasteRef.current = false;
+          setInput(prePasteInputRef.current + pasted);
+          setHistoryCursor(undefined);
+        } else {
+          pasteBufferRef.current = after;
+        }
+        return;
+      }
+      if (inPasteRef.current) {
+        if (str.includes("\x1b[201~")) {
+          pasteBufferRef.current += str.slice(0, str.indexOf("\x1b[201~"));
+          const pasted = pasteBufferRef.current.replace(/\r\n|\r/g, "\n");
+          inPasteRef.current = false;
+          pasteBufferRef.current = "";
+          setInput(prePasteInputRef.current + pasted);
+          setHistoryCursor(undefined);
+        } else {
+          pasteBufferRef.current += str;
+        }
+      }
+    };
+
+    process.stdin.on("data", onData);
+    return () => {
+      process.stdout.write("\x1b[?2004l");
+      process.stdin.off("data", onData);
+    };
+  }, []);
 
   useEffect(() => {
     if (props.startupNotice) {
@@ -677,6 +725,7 @@ export function App(props: AppProps): React.ReactElement {
   }
 
   useInput((value, key) => {
+    if (inPasteRef.current) return;
     if (key.ctrl && value === "c") {
       exit();
       return;

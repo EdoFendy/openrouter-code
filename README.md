@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/or-code.png" alt="or-code" width="180" />
+<img src="public/or-code.png" alt="or-code" width="1800" />
 
 # `or-code`
 

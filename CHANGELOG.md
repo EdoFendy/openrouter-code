@@ -22,7 +22,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.1.0] — 2025-04-28
+## [0.1.1] — 2026-04-28
+
+### Fixed
+- **Paste on Windows**: bracketed paste mode (`\x1b[?2004h`) enabled on startup; stdin handler captures `\x1b[200~`…`\x1b[201~` sequences atomically, preventing double-insertion and newline-triggered premature submit
+- **First-run setup**: if no API key is configured, CLI prompts for it before opening the TUI, saves to `~/.orcode/config.json`, skips the prompt on all subsequent runs
+
+---
+
+## [0.1.0] — 2026-04-28
 
 ### Added
 - **Model registry** — live fetch from OpenRouter `/api/v1/models`, 1-hour cache, capability detection (`supportsTools`, `supportsReasoning`, `supportsStructuredOutputs`, modalities, pricing).
