@@ -24,6 +24,7 @@ import { Preview } from "./components/Preview.js";
 import { NoticeBanner, ProblemBanner, BypassBanner } from "./components/Notice.js";
 import { Dock } from "./components/Dock.js";
 import { FileChanges, type FileChange } from "./components/FileChanges.js";
+import { FilePanel } from "./components/FilePanel.js";
 import { useTerminalDimensions } from "./components/use-terminal-dimensions.js";
 
 type Notice = {
@@ -72,7 +73,11 @@ export function App(props: AppProps): React.ReactElement {
   const currentPrompt = useRef<string>("");
   const lastToolEventAtRef = useRef<number>(0);
   const [cursorPos, setCursorPos] = useState(0);
+  const [activeWriteInfo, setActiveWriteInfo] = useState<{ tool: "Write" | "Edit"; path: string; preview: string; lines?: number } | undefined>(undefined);
   const cursorPosRef = useRef(0);
+  const autoStoppedRef = useRef(false);
+  const lastProseWarnBucket = useRef(0);
+  const lastHeapMbRef = useRef(0);
   const inPasteRef = useRef(false);
   const pasteBufferRef = useRef("");
   const prePasteInputRef = useRef("");
@@ -199,19 +204,26 @@ export function App(props: AppProps): React.ReactElement {
       }
       const silentMs = Date.now() - referenceMs;
       if (silentMs > 90_000) {
-        void runner.cancel();
-        setTranscript((items) => [
-          ...items,
-          textItem(
-            "system",
-            `× run auto-cancelled: ${Math.round(silentMs / 1000)}s without tool progress. Model is stuck on prose loop. Try /reset and a tools-friendly model (claude-sonnet-4-6, gpt-5).`
-          )
-        ]);
+        if (!autoStoppedRef.current) {
+          autoStoppedRef.current = true;
+          void runner.cancel();
+          setTranscript((items) => [
+            ...items,
+            textItem(
+              "system",
+              `× run auto-cancelled: ${Math.round(silentMs / 1000)}s without tool progress. Model is stuck on prose loop. Try /reset and a tools-friendly model (claude-sonnet-4-6, gpt-5).`
+            )
+          ]);
+        }
       } else if (silentMs > 45_000) {
-        setNotice({
-          tone: "warning",
-          text: `No tool progress for ${Math.round(silentMs / 1000)}s — model in prose loop. Esc Esc to cancel. Auto-cancel at 90s.`
-        });
+        const bucket = Math.floor(silentMs / 15_000);
+        if (bucket > lastProseWarnBucket.current) {
+          lastProseWarnBucket.current = bucket;
+          setNotice({
+            tone: "warning",
+            text: `No tool progress for ${bucket * 15}s — model in prose loop. Esc Esc to cancel. Auto-cancel at 90s.`
+          });
+        }
       }
     }, 5000);
     return () => clearInterval(id);
@@ -228,19 +240,25 @@ export function App(props: AppProps): React.ReactElement {
       setHeapMb(heapUsedMb);
       const ratio = usage.heapUsed / Math.max(1, usage.heapTotal);
       if (heapUsedMb > 1500 || ratio > 0.9) {
-        void runner.cancel();
-        setTranscript((items) => [
-          ...items,
-          textItem(
-            "system",
-            `× run auto-cancelled: heap pressure ${heapUsedMb}MB / ${heapTotalMb}MB. Restart with /reset, or use NODE_OPTIONS=--max-old-space-size=4096.`
-          )
-        ]);
+        if (!autoStoppedRef.current) {
+          autoStoppedRef.current = true;
+          void runner.cancel();
+          setTranscript((items) => [
+            ...items,
+            textItem(
+              "system",
+              `× run auto-cancelled: heap pressure ${heapUsedMb}MB / ${heapTotalMb}MB. Restart with /reset, or use NODE_OPTIONS=--max-old-space-size=4096.`
+            )
+          ]);
+        }
       } else if (heapUsedMb > 1000 || ratio > 0.75) {
-        setNotice({
-          tone: "warning",
-          text: `Heap pressure: ${heapUsedMb}MB / ${heapTotalMb}MB (${Math.round(ratio * 100)}%). Run will auto-cancel above 1.5GB.`
-        });
+        if (Math.abs(heapUsedMb - lastHeapMbRef.current) >= 10) {
+          lastHeapMbRef.current = heapUsedMb;
+          setNotice({
+            tone: "warning",
+            text: `Heap pressure: ${heapUsedMb}MB / ${heapTotalMb}MB (${Math.round(ratio * 100)}%). Run will auto-cancel above 1.5GB.`
+          });
+        }
       }
     }, 4000);
     return () => clearInterval(id);
@@ -414,6 +432,10 @@ export function App(props: AppProps): React.ReactElement {
     setInput("");
     setCursorPos(0);
     setScrollOffset(0);
+    setActiveWriteInfo(undefined);
+    autoStoppedRef.current = false;
+    lastProseWarnBucket.current = 0;
+    lastHeapMbRef.current = 0;
     pushHistory(trimmed);
     currentPrompt.current = trimmed;
     setTranscript((items) => [...items, textItem("user", redactSecrets(trimmed))]);
@@ -658,21 +680,29 @@ export function App(props: AppProps): React.ReactElement {
               localStats.anyTool += 1;
               if (event.tool === "Write") {
                 localStats.writes += 1;
+                setActiveWriteInfo((prev) => prev ? { ...prev, ...(lines !== undefined ? { lines } : {}) } : undefined);
                 if (path) {
                   setFileChanges((current) => mergeChange(current, { path, action: "created", ...(bytes !== undefined ? { bytes } : {}) }));
                 }
               } else if (event.tool === "Edit") {
                 localStats.edits += 1;
+                setActiveWriteInfo((prev) => prev ? { ...prev, ...(lines !== undefined ? { lines } : {}) } : undefined);
                 if (path) {
                   setFileChanges((current) => mergeChange(current, { path, action: "edited", ...(bytes !== undefined ? { bytes } : {}) }));
                 }
               } else if (event.tool === "Shell") {
                 localStats.shells += 1;
+                setActiveWriteInfo(undefined);
                 if (command) {
                   setFileChanges((current) => mergeChange(current, { path: command.slice(0, 80), action: "shell" }));
                 }
+              } else {
+                setActiveWriteInfo(undefined);
               }
             } else if (event.type === "tool.error" || event.type === "tool.denied") {
+              if (event.tool === "Write" || event.tool === "Edit") {
+                setActiveWriteInfo(undefined);
+              }
               if (path) {
                 setFileChanges((current) =>
                   mergeChange(current, {
@@ -684,6 +714,10 @@ export function App(props: AppProps): React.ReactElement {
             }
           } else if (event.type === "tool.preview") {
             const path = stringPayload(event.payload, "path") ?? "";
+            const previewText = typeof event.payload.preview === "string" ? event.payload.preview : "";
+            if ((event.tool === "Write" || event.tool === "Edit") && path) {
+              setActiveWriteInfo({ tool: event.tool as "Write" | "Edit", path, preview: previewText });
+            }
             const key = `${event.tool}:${path}`;
             if (seenPreviewKeys.has(key)) {
               return;
@@ -733,6 +767,7 @@ export function App(props: AppProps): React.ReactElement {
       }
     } finally {
       setRunning(false);
+      setActiveWriteInfo(undefined);
     }
   }
 
@@ -906,13 +941,20 @@ export function App(props: AppProps): React.ReactElement {
   const showPalette = input.trim().startsWith("/") && suggestions.length > 0;
 
   const fileChangesRows = fileChanges.length > 0 ? Math.min(8, 2 + Math.min(6, fileChanges.length)) : 0;
+  const activeWriteRows = activeWriteInfo && running
+    ? Math.min(10, 3 + Math.min(6, activeWriteInfo.preview.split("\n").length))
+    : 0;
+  const reasoningRows = running && runView.reasoning
+    ? Math.min(2, runView.reasoning.split(/\n\n+/).filter((b) => b.trim().length > 0).length)
+    : 0;
   const splashHeader = transcript.length === 0 && !running;
   const splashRows = splashHeader ? 6 : 1;
   const reservedRows =
     splashRows /* header */ +
     1 /* statusbar */ +
     (bypass && !compact ? 1 : 0) +
-    (showNowLine ? 4 : 0) /* now line + phase chain */ +
+    (showNowLine ? 2 + reasoningRows : 0) /* spinner + phases + reasoning */ +
+    activeWriteRows +
     fileChangesRows +
     (showPreview ? Math.min(20, 6) : 0) +
     (showProblem ? 2 : 0) +
@@ -956,6 +998,17 @@ export function App(props: AppProps): React.ReactElement {
       {showNowLine ? (
         <Box flexDirection="column" marginTop={1}>
           <NowLine view={runView} columns={dim.columns} tickFrame={nowTick} />
+          {activeWriteInfo ? (
+            <Box marginTop={1}>
+              <FilePanel
+                tool={activeWriteInfo.tool}
+                path={activeWriteInfo.path}
+                preview={activeWriteInfo.preview}
+                lines={activeWriteInfo.lines}
+                columns={dim.columns}
+              />
+            </Box>
+          ) : null}
           {fileChanges.length > 0 ? (
             <Box marginTop={1}>
               <FileChanges files={fileChanges} columns={dim.columns} compact={compact} />

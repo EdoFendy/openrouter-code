@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { AgentRunView } from "../../runtime/agent-events.js";
-import { compactLine, formatElapsed } from "./text-utils.js";
+import { formatElapsed } from "./text-utils.js";
 import { PhaseChain } from "./PhaseChain.js";
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -11,6 +11,15 @@ export type NowLineProps = {
   columns: number;
   tickFrame: number;
 };
+
+function getReasoningBlocks(reasoning: string, maxBlocks: number, maxWidth: number): string[] {
+  return reasoning
+    .split(/\n\n+/)
+    .map((b) => b.replace(/\n/g, " ").trim())
+    .filter((b) => b.length > 0)
+    .slice(-maxBlocks)
+    .map((b) => (b.length > maxWidth ? `${b.slice(0, maxWidth - 1)}…` : b));
+}
 
 export function NowLine(props: NowLineProps): React.ReactElement | null {
   const view = props.view;
@@ -41,9 +50,21 @@ export function NowLine(props: NowLineProps): React.ReactElement | null {
               ? "magenta"
               : "cyan";
 
-  const spinner = view.status === "running" ? SPINNER_FRAMES[props.tickFrame % SPINNER_FRAMES.length] : view.status === "done" ? "✓" : view.status === "error" ? "✗" : "⊘";
+  const spinner =
+    view.status === "running"
+      ? SPINNER_FRAMES[props.tickFrame % SPINNER_FRAMES.length]
+      : view.status === "done"
+        ? "✓"
+        : view.status === "error"
+          ? "✗"
+          : "⊘";
+
   const stats = view.toolStats;
-  const reasoningPreview = view.reasoning && view.status === "running" ? compactLine(view.reasoning, Math.max(40, props.columns - 4)) : undefined;
+  const maxWidth = Math.max(20, props.columns - 8);
+  const reasoningBlocks =
+    view.reasoning && view.status === "running"
+      ? getReasoningBlocks(view.reasoning, 2, maxWidth)
+      : [];
 
   return (
     <Box flexDirection="column">
@@ -51,10 +72,21 @@ export function NowLine(props: NowLineProps): React.ReactElement | null {
         <Text color={labelColor} bold>{spinner} </Text>
         <Text color={labelColor}>{label}</Text>
         {elapsed ? <Text color="gray">  · {elapsed}</Text> : null}
-        {stats.calls > 0 ? <Text color="gray">  · step {Math.max(view.turns, 1)} · tools {stats.calls}/{stats.results}</Text> : null}
+        {stats.calls > 0 ? (
+          <Text color="gray">  · step {Math.max(view.turns, 1)} · tools {stats.calls}/{stats.results}</Text>
+        ) : null}
       </Box>
       <PhaseChain phases={view.phases} />
-      {reasoningPreview ? <Text color="gray">  {reasoningPreview}</Text> : null}
+      {reasoningBlocks.length > 0 ? (
+        <Box flexDirection="column" marginTop={0}>
+          {reasoningBlocks.map((block, i) => (
+            <Box key={i}>
+              <Text color="gray" dimColor>  │ </Text>
+              <Text color="gray">{block}</Text>
+            </Box>
+          ))}
+        </Box>
+      ) : null}
     </Box>
   );
 }
