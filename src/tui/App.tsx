@@ -26,6 +26,7 @@ import { Dock } from "./components/Dock.js";
 import { FileChanges, type FileChange } from "./components/FileChanges.js";
 import { FilePanel } from "./components/FilePanel.js";
 import { useTerminalDimensions } from "./components/use-terminal-dimensions.js";
+import { readClipboard } from "./clipboard.js";
 
 type Notice = {
   tone: "info" | "warning" | "error";
@@ -824,6 +825,18 @@ export function App(props: AppProps): React.ReactElement {
 
     if (key.ctrl && value === "n") {
       recallHistory("next");
+      return;
+    }
+
+    if (key.ctrl && value === "v") {
+      const pasted = readClipboard().replace(/\r\n|\r/g, "\n");
+      if (pasted) {
+        const pos = cursorPosRef.current;
+        setInput((current) => current.slice(0, pos) + pasted + current.slice(pos));
+        setCursorPos(pos + pasted.length);
+        setHistoryCursor(undefined);
+        setNotice(undefined);
+      }
       return;
     }
 

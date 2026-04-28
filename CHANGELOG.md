@@ -21,6 +21,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.3] — 2026-04-29
+
+### Fixed
+- **Ctrl+V paste**: in Ink's raw mode, `^V` was mapped to the letter "v" instead of pasting. Now reads the system clipboard directly (`pbpaste` on macOS, `Get-Clipboard` on Windows, `xclip`/`xsel`/`wl-paste` on Linux) and inserts at cursor position. Cmd+V (macOS) and terminal-native paste still use the bracketed paste path.
+
+---
+
 ## [0.1.2] — 2026-04-29
 
 ### Fixed
@@ -62,7 +69,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/EdoFendy/openrouter-code/releases/tag/v0.1.0
