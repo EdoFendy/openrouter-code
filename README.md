@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/or-code.png" alt="or-code" width="1800" />
+<img src="public/or-code.png" alt="or-code" width="180" />
 
 # `or-code`
 
@@ -214,6 +214,8 @@ Minimal `.orcode/config.json`:
 
 → Full reference: [docs/configuration.md](docs/configuration.md)
 
+> **Privacy:** All session data stays local — or-code sends nothing to any server except the OpenRouter API calls you explicitly trigger.
+
 ---
 
 ## 🎯 Commands
@@ -277,6 +279,12 @@ Rules are evaluated top-down, first match wins. Tool · Action · Pattern · Dec
 
 ---
 
+## ⚠️ Disclaimer
+
+or-code can execute shell commands on your behalf via the `Shell` tool. Review your permission rules before enabling `auto` or `bypass` mode. The software is provided "as is" — the authors are not liable for data loss or damage caused by AI-generated commands you approve. See [LICENSE](LICENSE).
+
+---
+
 ## 🏗 Architecture
 
 ```
@@ -319,9 +327,9 @@ Full design doc: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [x] Secret redaction in transcripts
 - [x] CLAUDE.md / AGENTS.md compatibility
 - [x] Open-source release (MIT, full docs, issue templates, CI)
+- [x] Published to npm — `npm install -g @edofendy/or-code`
 
 **v0.2 — next 🚧**
-- [ ] **`npm install -g @edofendy/or-code`** — public npm release, `npx` support
 - [ ] First-class approval queue with `/approve` and `/deny`
 - [ ] `or-code --version` flag
 - [ ] Session pruning (`/sessions prune`)
@@ -345,7 +353,8 @@ PRs, issues, model recommendations, and skill submissions all welcome. Start wit
 
 ```bash
 git clone https://github.com/EdoFendy/openrouter-code
-cd openrouter-code cd or-code && npm installcd or-code && npm install npm install
+cd openrouter-code
+npm install
 npm run check   # typecheck + lint + test + build
 ```
 
