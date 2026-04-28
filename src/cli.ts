@@ -38,7 +38,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  let { config, paths } = await loadConfig({ cwd });
+  const loaded = await loadConfig({ cwd });
+  let config = loaded.config;
+  const paths = loaded.paths;
   await ensureConfigDirs(paths);
 
   if (!config.apiKey) {
