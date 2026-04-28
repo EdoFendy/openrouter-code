@@ -8,7 +8,7 @@
   "homepage": "https://github.com/EdoFendy/openrouter-code#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/EdoFendy/openrouter-code.git"
+    "url": "git+https://github.com/EdoFendy/openrouter-code.git"
   },
   "bugs": {
     "url": "https://github.com/EdoFendy/openrouter-code/issues"
@@ -34,8 +34,8 @@
     "permissions"
   ],
   "bin": {
-    "or-code": "./dist/cli.js",
-    "orcode": "./dist/cli.js"
+    "or-code": "dist/cli.js",
+    "orcode": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -47,7 +47,7 @@
   "scripts": {
     "dev": "node --max-old-space-size=4096 ./node_modules/.bin/tsx src/cli.ts",
     "start": "node --max-old-space-size=4096 dist/cli.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
     "prepublishOnly": "npm run check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
