@@ -8,7 +8,7 @@
 **Every model. Full control. Local-first.**
 
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen?logo=github)](https://github.com/EdoFendy/openrouter-code/actions)
-[![npm version](https://img.shields.io/npm/v/or-code.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/or-code)
+[![npm version](https://img.shields.io/npm/v/%40edofendy%2For-code.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/@edofendy/or-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -28,7 +28,7 @@ No IDE plugin. No vendor lock-in. No telemetry. Just a permission-first agent lo
 
 ```bash
 # 1. Install
-npm install -g or-code
+npm install -g @edofendy/or-code
 
 # 2. Auth
 export OPENROUTER_API_KEY="sk-or-..."
@@ -167,11 +167,11 @@ or-code · anthropic/claude-sonnet-4.6 · mode: default · sess: 4f2a · $0.034
 
 ```bash
 # Recommended: global install
-npm install -g or-code
+npm install -g @edofendy/or-code
 
 # Or with pnpm / bun
-pnpm add -g or-code
-bun add -g or-code
+pnpm add -g @edofendy/or-code
+bun add -g @edofendy/or-code
 
 # Or run from source
 git clone https://github.com/EdoFendy/openrouter-code
@@ -321,7 +321,7 @@ Full design doc: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [x] Open-source release (MIT, full docs, issue templates, CI)
 
 **v0.2 — next 🚧**
-- [ ] **`npm install -g or-code`** — public npm release, `npx` support
+- [ ] **`npm install -g @edofendy/or-code`** — public npm release, `npx` support
 - [ ] First-class approval queue with `/approve` and `/deny`
 - [ ] `or-code --version` flag
 - [ ] Session pruning (`/sessions prune`)
