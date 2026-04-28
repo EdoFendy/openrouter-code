@@ -367,7 +367,7 @@ Built on the shoulders of:
 
 ## 📜 License
 
-[MIT](LICENSE) © 2025 Edoardo Atria and `or-code` contributors.
+[MIT](LICENSE) © 2025 `or-code` contributors.
 
 <div align="center">
 

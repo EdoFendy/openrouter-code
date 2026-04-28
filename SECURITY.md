@@ -10,7 +10,7 @@
 
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-Email **valatria14@gmail.com** with:
+Open a [GitHub Security Advisory](https://github.com/EdoFendy/openrouter-code/security/advisories/new) (preferred) or start a private [Discussion](https://github.com/EdoFendy/openrouter-code/discussions) with:
 
 - A description of the vulnerability
 - Steps to reproduce
