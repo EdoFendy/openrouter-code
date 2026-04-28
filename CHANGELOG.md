@@ -11,7 +11,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Planned
 - First-class approval queue with `/approve` and `/deny` backed by Agent SDK state
-- `npm install -g or-code` npm release
 - Saved model presets + latency/cost sorting in `/models`
 - Session pruning (`/sessions prune`)
 - Stronger diff engine with hunk support and binary-file detection
@@ -19,6 +18,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Eval corpus (offline · 4xx/5xx · refresh/resume · double-submit · timeout)
 - Sandbox profiles for tool isolation
 - MCP server compatibility
+
+---
+
+## [0.1.2] — 2026-04-29
+
+### Fixed
+- **Warning spam**: auto-cancel message now fires exactly once per run (was re-appending every 5 s while React caught up); prose-loop notice bucketed to 15 s intervals; heap pressure notice only updates when usage changes by ≥ 10 MB
+- **Input cursor**: full cursor position tracking — `←/→` move within the line, `Backspace` deletes before cursor, `Delete` removes char at cursor, typing inserts at cursor position; `Ctrl+A/E` jump to start/end; `Ctrl+K` kill to end; `Ctrl+W` delete word; `Home/End` keys supported
+- **Paste fix**: `prependListener` fires before Ink's handler so bracketed-paste guard is active for the same data event; paste inserts at cursor position
+- **Scroll vs history**: `↑/↓` now scroll the transcript (3 lines per press); history navigation moved to `Ctrl+P / Ctrl+N`
+
+### Added
+- **File write panel**: when the agent calls Write or Edit a bordered panel appears with the filename, first 6 lines of file content, and `+N lines` count when the tool completes; clears automatically on run completion
+- **Reasoning display**: last 2 reasoning paragraphs shown as `│`-prefixed lines instead of a single truncated compact line
 
 ---
 
@@ -49,5 +62,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/EdoFendy/openrouter-code/releases/tag/v0.1.0
