@@ -71,29 +71,41 @@ export function App(props: AppProps): React.ReactElement {
   const lastEscAt = useRef<number>(0);
   const currentPrompt = useRef<string>("");
   const lastToolEventAtRef = useRef<number>(0);
+  const [cursorPos, setCursorPos] = useState(0);
+  const cursorPosRef = useRef(0);
   const inPasteRef = useRef(false);
   const pasteBufferRef = useRef("");
   const prePasteInputRef = useRef("");
+  const prePasteCursorRef = useRef(0);
   const inputRef = useRef("");
 
   useEffect(() => { inputRef.current = input; }, [input]);
+  useEffect(() => { cursorPosRef.current = cursorPos; }, [cursorPos]);
 
   useEffect(() => {
     if (!process.stdout.isTTY) return;
     process.stdout.write("\x1b[?2004h");
+
+    const applyPaste = (pasted: string): void => {
+      const pre = prePasteInputRef.current;
+      const pos = prePasteCursorRef.current;
+      const cleaned = pasted.replace(/\r\n|\r/g, "\n");
+      setInput(pre.slice(0, pos) + cleaned + pre.slice(pos));
+      setCursorPos(pos + cleaned.length);
+      setHistoryCursor(undefined);
+      setTimeout(() => { inPasteRef.current = false; }, 0);
+    };
 
     const onData = (chunk: Buffer | string) => {
       const str = typeof chunk === "string" ? chunk : chunk.toString("utf8");
       if (!inPasteRef.current && str.includes("\x1b[200~")) {
         inPasteRef.current = true;
         prePasteInputRef.current = inputRef.current;
+        prePasteCursorRef.current = cursorPosRef.current;
         pasteBufferRef.current = "";
         const after = str.slice(str.indexOf("\x1b[200~") + 6);
         if (after.includes("\x1b[201~")) {
-          const pasted = after.slice(0, after.indexOf("\x1b[201~")).replace(/\r\n|\r/g, "\n");
-          inPasteRef.current = false;
-          setInput(prePasteInputRef.current + pasted);
-          setHistoryCursor(undefined);
+          applyPaste(after.slice(0, after.indexOf("\x1b[201~")));
         } else {
           pasteBufferRef.current = after;
         }
@@ -102,18 +114,15 @@ export function App(props: AppProps): React.ReactElement {
       if (inPasteRef.current) {
         if (str.includes("\x1b[201~")) {
           pasteBufferRef.current += str.slice(0, str.indexOf("\x1b[201~"));
-          const pasted = pasteBufferRef.current.replace(/\r\n|\r/g, "\n");
-          inPasteRef.current = false;
+          applyPaste(pasteBufferRef.current);
           pasteBufferRef.current = "";
-          setInput(prePasteInputRef.current + pasted);
-          setHistoryCursor(undefined);
         } else {
           pasteBufferRef.current += str;
         }
       }
     };
 
-    process.stdin.on("data", onData);
+    process.stdin.prependListener("data", onData);
     return () => {
       process.stdout.write("\x1b[?2004l");
       process.stdin.off("data", onData);
@@ -383,8 +392,10 @@ export function App(props: AppProps): React.ReactElement {
             ? undefined
             : historyCursor + 1;
 
+    const recalled = nextCursor === undefined ? "" : history[nextCursor] ?? "";
     setHistoryCursor(nextCursor);
-    setInput(nextCursor === undefined ? "" : history[nextCursor] ?? "");
+    setInput(recalled);
+    setCursorPos(recalled.length);
     setNotice(undefined);
   }
 
@@ -401,6 +412,7 @@ export function App(props: AppProps): React.ReactElement {
 
     setNotice(undefined);
     setInput("");
+    setCursorPos(0);
     setScrollOffset(0);
     pushHistory(trimmed);
     currentPrompt.current = trimmed;
@@ -726,6 +738,7 @@ export function App(props: AppProps): React.ReactElement {
 
   useInput((value, key) => {
     if (inPasteRef.current) return;
+
     if (key.ctrl && value === "c") {
       exit();
       return;
@@ -733,8 +746,49 @@ export function App(props: AppProps): React.ReactElement {
 
     if (key.ctrl && value === "u") {
       setInput("");
+      setCursorPos(0);
       setHistoryCursor(undefined);
       setNotice(undefined);
+      return;
+    }
+
+    if (key.ctrl && value === "a") {
+      setCursorPos(0);
+      return;
+    }
+
+    if (key.ctrl && value === "e") {
+      setCursorPos(inputRef.current.length);
+      return;
+    }
+
+    if (key.ctrl && value === "k") {
+      const pos = cursorPosRef.current;
+      setInput((current) => current.slice(0, pos));
+      setHistoryCursor(undefined);
+      return;
+    }
+
+    if (key.ctrl && value === "w") {
+      const pos = cursorPosRef.current;
+      const current = inputRef.current;
+      if (pos === 0) return;
+      let newPos = pos;
+      while (newPos > 0 && current[newPos - 1] === " ") newPos--;
+      while (newPos > 0 && current[newPos - 1] !== " ") newPos--;
+      setInput(current.slice(0, newPos) + current.slice(pos));
+      setCursorPos(newPos);
+      setHistoryCursor(undefined);
+      return;
+    }
+
+    if (key.ctrl && value === "p") {
+      recallHistory("previous");
+      return;
+    }
+
+    if (key.ctrl && value === "n") {
+      recallHistory("next");
       return;
     }
 
@@ -750,11 +804,42 @@ export function App(props: AppProps): React.ReactElement {
       lastEscAt.current = now;
       if (!running) {
         setInput("");
+        setCursorPos(0);
         setHistoryCursor(undefined);
         setNotice(undefined);
       } else {
         setNotice({ tone: "info", text: "Press Esc again within 1.5s to cancel the running model." });
       }
+      return;
+    }
+
+    if (key.home) {
+      setCursorPos(0);
+      return;
+    }
+
+    if (key.end) {
+      setCursorPos(inputRef.current.length);
+      return;
+    }
+
+    if (key.upArrow) {
+      setScrollOffset((current) => current + 3);
+      return;
+    }
+
+    if (key.downArrow) {
+      setScrollOffset((current) => Math.max(0, current - 3));
+      return;
+    }
+
+    if (key.leftArrow) {
+      setCursorPos((p) => Math.max(0, p - 1));
+      return;
+    }
+
+    if (key.rightArrow) {
+      setCursorPos((p) => Math.min(inputRef.current.length, p + 1));
       return;
     }
 
@@ -768,18 +853,10 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (key.upArrow) {
-      recallHistory("previous");
-      return;
-    }
-
-    if (key.downArrow) {
-      recallHistory("next");
-      return;
-    }
-
     if (key.tab && suggestions[0]) {
-      setInput(`/${suggestions[0].name} `);
+      const completed = `/${suggestions[0].name} `;
+      setInput(completed);
+      setCursorPos(completed.length);
       setHistoryCursor(undefined);
       setNotice(undefined);
       return;
@@ -790,15 +867,31 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (key.backspace || key.delete) {
-      setInput((current) => current.slice(0, -1));
+    if (key.backspace) {
+      const pos = cursorPosRef.current;
+      if (pos === 0) return;
+      setInput((current) => current.slice(0, pos - 1) + current.slice(pos));
+      setCursorPos(pos - 1);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (key.delete) {
+      const pos = cursorPosRef.current;
+      setInput((current) => {
+        if (pos >= current.length) return current;
+        return current.slice(0, pos) + current.slice(pos + 1);
+      });
       setHistoryCursor(undefined);
       setNotice(undefined);
       return;
     }
 
     if (value) {
-      setInput((current) => current + value);
+      const pos = cursorPosRef.current;
+      setInput((current) => current.slice(0, pos) + value + current.slice(pos));
+      setCursorPos(pos + value.length);
       setHistoryCursor(undefined);
       setNotice(undefined);
     }
@@ -894,7 +987,7 @@ export function App(props: AppProps): React.ReactElement {
       ) : null}
 
       <Box marginTop={1}>
-        <Dock input={input} running={running} hasApiKey={Boolean(config.apiKey)} suggestions={suggestions} columns={dim.columns} />
+        <Dock input={input} cursorPos={cursorPos} running={running} hasApiKey={Boolean(config.apiKey)} suggestions={suggestions} columns={dim.columns} />
       </Box>
     </Box>
   );

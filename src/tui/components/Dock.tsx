@@ -4,6 +4,7 @@ import type { CommandSpec } from "../../commands/catalog.js";
 
 export type DockProps = {
   input: string;
+  cursorPos: number;
   running: boolean;
   hasApiKey: boolean;
   suggestions: CommandSpec[];
@@ -13,6 +14,10 @@ export type DockProps = {
 export function Dock(props: DockProps): React.ReactElement {
   const promptColor = props.running || !props.hasApiKey ? "gray" : "white";
   const showPalette = props.input.trim().startsWith("/") && props.suggestions.length > 0;
+  const cursor = Math.min(Math.max(0, props.cursorPos), props.input.length);
+  const before = props.input.slice(0, cursor);
+  const atCursor = props.input[cursor] ?? " ";
+  const after = props.input.slice(cursor + 1);
 
   return (
     <Box flexDirection="column">
@@ -21,8 +26,9 @@ export function Dock(props: DockProps): React.ReactElement {
       <HintLine running={props.running} hasApiKey={props.hasApiKey} suggestions={props.suggestions} />
       <Box>
         <Text color={promptColor}>❯ </Text>
-        <Text color={promptColor}>{props.input}</Text>
-        <Text color="cyan">▌</Text>
+        <Text color={promptColor}>{before}</Text>
+        <Text inverse>{atCursor}</Text>
+        <Text color={promptColor}>{after}</Text>
       </Box>
     </Box>
   );
@@ -53,7 +59,7 @@ function HintLine(props: { running: boolean; hasApiKey: boolean; suggestions: Co
     return <Text color="yellow">/login &lt;key&gt; required before model calls</Text>;
   }
   if (props.running) {
-    return <Text color="gray">working — Enter held · PgUp/PgDn scroll · <Text color="yellow">Esc Esc cancel run</Text> · Ctrl-C exit</Text>;
+    return <Text color="gray">working  ·  PgUp/PgDn scroll  ·  <Text color="yellow">Esc Esc cancel</Text>  ·  Ctrl-C exit</Text>;
   }
 
   const next = props.suggestions[0];
@@ -62,12 +68,12 @@ function HintLine(props: { running: boolean; hasApiKey: boolean; suggestions: Co
       <Box>
         <Text color="gray">Tab </Text>
         <Text color="cyan">/{next.name}</Text>
-        <Text color="gray">  ·  Enter send  ·  ↑↓ history  ·  PgUp/PgDn scroll  ·  Esc clear  ·  Ctrl-C exit</Text>
+        <Text color="gray">  ·  ←→ cursor  ·  ↑↓ scroll  ·  Ctrl+P/N history  ·  Enter send  ·  Esc clear  ·  Ctrl-C exit</Text>
       </Box>
     );
   }
 
-  return <Text color="gray">Tab complete  ·  Enter send  ·  ↑↓ history  ·  PgUp/PgDn scroll  ·  Esc clear  ·  Ctrl-C exit</Text>;
+  return <Text color="gray">←→ cursor  ·  ↑↓ scroll  ·  Ctrl+P/N history  ·  Enter send  ·  Esc clear  ·  Ctrl-C exit</Text>;
 }
 
 function groupByCategory(specs: CommandSpec[]): { category: string; items: CommandSpec[] }[] {
