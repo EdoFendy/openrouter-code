@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.env
+.orcode/sessions/
+.orcode/cache/
+*.log
+.DS_Store
+mare-sup/
+teacher-app/
+duckduckgo_scraper/
+tests/
+.orcode/skills/
+.orcode/sessions/
+.orcode/debug/

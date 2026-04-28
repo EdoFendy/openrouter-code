@@ -1,0 +1,4 @@
+{
+  "defaultModel": "deepseek/deepseek-v4-pro",
+  "permissionMode": "bypass"
+}

@@ -1,0 +1,16 @@
+src/
+tests/
+.orcode/sessions/
+.orcode/debug/
+duckduckgo_scraper/
+mare-sup/
+teacher-app/
+ragionamento_completo.md
+eslint.config.js
+tsconfig*.json
+.github/
+.env
+*.log
+coverage/
+node_modules/
+.DS_Store

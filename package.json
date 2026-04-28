@@ -1,0 +1,77 @@
+{
+  "name": "or-code",
+  "version": "0.1.0",
+  "description": "Ultra-light OpenRouter-native agentic coding CLI. Every model. Full control.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Edoardo Atria <valatria14@gmail.com>",
+  "homepage": "https://github.com/or-code-ai/or-code#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/or-code-ai/or-code.git"
+  },
+  "bugs": {
+    "url": "https://github.com/or-code-ai/or-code/issues"
+  },
+  "keywords": [
+    "openrouter",
+    "ai",
+    "agent",
+    "coding",
+    "cli",
+    "llm",
+    "terminal",
+    "agentic",
+    "gpt",
+    "claude",
+    "gemini",
+    "model-agnostic",
+    "typescript",
+    "ink",
+    "zod",
+    "skills",
+    "hooks",
+    "permissions"
+  ],
+  "bin": {
+    "or-code": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "docs",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "node --max-old-space-size=4096 ./node_modules/.bin/tsx src/cli.ts",
+    "start": "node --max-old-space-size=4096 dist/cli.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "bun:dev": "bun run src/cli.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@openrouter/agent": "^0.4.0",
+    "fast-glob": "^3.3.3",
+    "ink": "^6.8.0",
+    "react": "^19.2.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.16.0",
+    "@types/react": "^19.2.0",
+    "eslint": "^9.39.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vitest": "^4.0.6"
+  }
+}

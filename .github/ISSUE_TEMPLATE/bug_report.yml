@@ -1,0 +1,75 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please fill out every section — incomplete reports will be closed.
+
+  - type: input
+    id: version
+    attributes:
+      label: or-code version
+      placeholder: "0.1.0 (run `or-code --version`)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options: [Node 20, Node 22, Bun]
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model in use
+      placeholder: "anthropic/claude-sonnet-4.6"
+    validations:
+      required: false
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: or-code doctor output
+      description: Run `or-code doctor` and paste the output here.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `or-code`
+        2. Type `/mode bypass`
+        3. Ask the agent to ...
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Paste the full error or unexpected output. Redact any secrets.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config (optional)
+      description: Paste your `.orcode/config.json` if relevant. Remove API keys.
+      render: json

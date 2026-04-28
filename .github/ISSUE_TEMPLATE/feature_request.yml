@@ -1,0 +1,50 @@
+name: Feature request
+description: Propose a new capability or behaviour change
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before submitting:** check the [Roadmap](https://github.com/or-code-ai/or-code#-roadmap) and open issues. If it's already planned, add a 👍 there instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What can you not do today, or what is painful?
+      placeholder: "I keep having to manually approve every `npm test` run even though it's safe..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behaviour you want. How would a user interact with it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds exist today? Why don't they suffice?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Model / OpenRouter
+        - Permission engine
+        - Tools
+        - Skills
+        - Hooks
+        - Session / JSONL
+        - TUI / UX
+        - Sub-agents
+        - Docs
+        - Other
+    validations:
+      required: true
