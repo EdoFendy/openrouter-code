@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Discussions (questions, ideas, showcase)
-    url: https://github.com/or-code-ai/or-code/discussions
+    url: https://github.com/EdoFendy/openrouter-code/discussions
     about: Not sure if it's a bug? Start a discussion first.
   - name: OpenRouter docs
     url: https://openrouter.ai/docs
     about: Issues with model responses or API limits — check here first.
   - name: Security vulnerability
-    url: https://github.com/or-code-ai/or-code/blob/main/SECURITY.md
+    url: https://github.com/EdoFendy/openrouter-code/blob/main/SECURITY.md
     about: Please read SECURITY.md before reporting a vulnerability.

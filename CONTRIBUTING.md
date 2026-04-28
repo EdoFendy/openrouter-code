@@ -13,8 +13,8 @@ Thanks for considering a contribution! `or-code` is a small, opinionated codebas
 ## Dev setup
 
 ```bash
-git clone https://github.com/or-code-ai/or-code
-cd or-code
+git clone https://github.com/EdoFendy/openrouter-code
+cd openrouter-code
 npm install
 
 # Run from source

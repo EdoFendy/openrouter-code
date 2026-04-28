@@ -41,5 +41,5 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/or-code-ai/or-code/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/or-code-ai/or-code/releases/tag/v0.1.0
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/EdoFendy/openrouter-code/releases/tag/v0.1.0

@@ -7,7 +7,7 @@
 **The OpenRouter-native agentic coding CLI.**
 **Every model. Full control. Local-first.**
 
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen?logo=github)](https://github.com/or-code-ai/or-code/actions)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?logo=github)](https://github.com/EdoFendy/openrouter-code/actions)
 [![npm version](https://img.shields.io/npm/v/or-code.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/or-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
@@ -174,8 +174,8 @@ pnpm add -g or-code
 bun add -g or-code
 
 # Or run from source
-git clone https://github.com/or-code-ai/or-code
-cd or-code && npm install && npm run dev
+git clone https://github.com/EdoFendy/openrouter-code
+cd openrouter-code cd openrouter-code cd or-code && npm installcd or-code && npm install npm install && npm run devcd openrouter-code cd or-code && npm installcd or-code && npm install npm install && npm run dev npm install cd openrouter-code cd or-code && npm installcd or-code && npm install npm install && npm run devcd openrouter-code cd or-code && npm installcd or-code && npm install npm install && npm run dev npm run dev
 ```
 
 Requires **Node ≥ 20** (or Bun). An [OpenRouter API key](https://openrouter.ai/keys).
@@ -307,23 +307,35 @@ Full design doc: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## 🗺 Roadmap
 
-- [x] Model registry with dynamic capabilities
-- [x] Permission engine (5 modes, glob rules)
-- [x] 7 local tools, preview-first
-- [x] JSONL sessions with resume / compact / export
-- [x] Skills with progressive disclosure
-- [x] Lifecycle hooks
-- [x] Ink TUI with streaming
-- [x] Sub-agents (depth-limited)
+**v0.1 — shipped ✅**
+- [x] Model registry with dynamic capabilities (live from OpenRouter)
+- [x] Permission engine — 5 modes, ordered glob-pattern rules
+- [x] 7 local tools, all preview-first (Read / Write / Edit / Grep / Glob / ListDir / Shell)
+- [x] JSONL sessions — resume / continue / compact / export
+- [x] Skills — progressive disclosure, GitHub install, 9 bundled
+- [x] Lifecycle hooks — 5 events, PreToolUse fail-closed
+- [x] Ink TUI — streaming, diff preview, palette, cost header
+- [x] Sub-agents — depth-limited, per-agent model/tools/budget
+- [x] Secret redaction in transcripts
+- [x] CLAUDE.md / AGENTS.md compatibility
+- [x] Open-source release (MIT, full docs, issue templates, CI)
+
+**v0.2 — next 🚧**
+- [ ] **`npm install -g or-code`** — public npm release, `npx` support
 - [ ] First-class approval queue with `/approve` and `/deny`
-- [ ] `npm install -g or-code` release on npm
-- [ ] Saved model presets + latency/cost sorting
+- [ ] `or-code --version` flag
 - [ ] Session pruning (`/sessions prune`)
+
+**v0.3 — soon**
+- [ ] Saved model presets + latency/cost sorting in `/models`
 - [ ] Stronger diff engine (hunks + binary detection)
+- [ ] Eval corpus (offline · 4xx/5xx · refresh/resume · double-submit)
+
+**v1.0 — future**
 - [ ] Allow rules scoped by file checksum / command hash
-- [ ] Eval corpus (offline / 4xx / 5xx / refresh / double-submit)
-- [ ] Sandbox profiles
+- [ ] Sandbox profiles for tool isolation
 - [ ] MCP server compatibility
+- [ ] Signed releases + provenance
 
 ---
 
@@ -332,8 +344,8 @@ Full design doc: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 PRs, issues, model recommendations, and skill submissions all welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
-git clone https://github.com/or-code-ai/or-code
-cd or-code && npm install
+git clone https://github.com/EdoFendy/openrouter-code
+cd openrouter-code cd or-code && npm installcd or-code && npm install npm install
 npm run check   # typecheck + lint + test + build
 ```
 
@@ -361,8 +373,8 @@ Built on the shoulders of:
 
 **If `or-code` saves you a context-switch, give it a ⭐ — it really helps.**
 
-[Report a bug](https://github.com/or-code-ai/or-code/issues/new?template=bug_report.yml) ·
-[Request a feature](https://github.com/or-code-ai/or-code/issues/new?template=feature_request.yml) ·
-[Discussions](https://github.com/or-code-ai/or-code/discussions)
+[Report a bug](https://github.com/EdoFendy/openrouter-code/issues/new?template=bug_report.yml) ·
+[Request a feature](https://github.com/EdoFendy/openrouter-code/issues/new?template=feature_request.yml) ·
+[Discussions](https://github.com/EdoFendy/openrouter-code/discussions)
 
 </div>

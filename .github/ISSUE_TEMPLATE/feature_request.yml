@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Before submitting:** check the [Roadmap](https://github.com/or-code-ai/or-code#-roadmap) and open issues. If it's already planned, add a 👍 there instead.
+        **Before submitting:** check the [Roadmap](https://github.com/EdoFendy/openrouter-code#-roadmap) and open issues. If it's already planned, add a 👍 there instead.
 
   - type: textarea
     id: problem

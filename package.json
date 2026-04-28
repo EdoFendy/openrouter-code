@@ -5,13 +5,13 @@
   "type": "module",
   "license": "MIT",
   "author": "Edoardo Atria <valatria14@gmail.com>",
-  "homepage": "https://github.com/or-code-ai/or-code#readme",
+  "homepage": "https://github.com/EdoFendy/openrouter-code#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/or-code-ai/or-code.git"
+    "url": "https://github.com/EdoFendy/openrouter-code.git"
   },
   "bugs": {
-    "url": "https://github.com/or-code-ai/or-code/issues"
+    "url": "https://github.com/EdoFendy/openrouter-code/issues"
   },
   "keywords": [
     "openrouter",
