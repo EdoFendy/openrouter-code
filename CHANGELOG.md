@@ -21,6 +21,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.4] — 2026-04-29
+
+### Changed
+- **Input bar — full rewrite**: dropped Ink's `useInput` (which mis-parsed `Ctrl+V` as the letter "v", lost cursor position between rapid keypresses, and dropped paste sequences). Replaced with a single raw stdin handler that parses byte sequences directly (`\x1b[D`/`\x1b[C` arrows, `\x7f` backspace, `\x1b[3~` delete, `\x1b[1;5D`/`\x1b[1;5C` Ctrl-arrow word jump, `\x1bb`/`\x1bf` Alt-arrow word jump, `\x1b[H`/`\x1b[F` Home/End, etc.) and synchronously updates `inputRef`/`cursorPosRef` on every mutation. No more stale-ref bugs: cursor moves, backspace/delete at cursor, word kill, and paste all work as in any normal terminal. Raw mode is now flipped via `useStdin` so Ink doesn't fight the handler.
+
+---
+
 ## [0.1.3] — 2026-04-29
 
 ### Fixed
@@ -69,7 +76,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.0...v0.1.1

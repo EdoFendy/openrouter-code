@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Box, useApp, useInput } from "ink";
+import { Box, useApp, useStdin } from "ink";
 import type { OrCodeConfig } from "../config.js";
 import type { ModelRegistry } from "../openrouter/model-registry.js";
 import { AgentRunner, CancelledError } from "../runtime/agent-runner.js";
@@ -55,6 +55,7 @@ export type AppProps = {
 
 export function App(props: AppProps): React.ReactElement {
   const { exit } = useApp();
+  const { setRawMode, isRawModeSupported } = useStdin();
   const [config, setConfig] = useState(props.initialConfig);
   const [sessionId, setSessionId] = useState(props.initialSessionId);
   const [input, setInput] = useState("");
@@ -84,20 +85,34 @@ export function App(props: AppProps): React.ReactElement {
   const prePasteInputRef = useRef("");
   const prePasteCursorRef = useRef(0);
   const inputRef = useRef("");
+  const rawHandlerRef = useRef<((str: string) => void) | undefined>(undefined);
 
   useEffect(() => { inputRef.current = input; }, [input]);
-  useEffect(() => { cursorPosRef.current = cursorPos; }, [cursorPos]);
+
+  function setInputAndCursor(next: string, pos: number): void {
+    inputRef.current = next;
+    cursorPosRef.current = pos;
+    setInput(next);
+    setCursorPos(pos);
+  }
 
   useEffect(() => {
     if (!process.stdout.isTTY) return;
+    if (isRawModeSupported && setRawMode) {
+      setRawMode(true);
+    }
     process.stdout.write("\x1b[?2004h");
 
     const applyPaste = (pasted: string): void => {
       const pre = prePasteInputRef.current;
       const pos = prePasteCursorRef.current;
       const cleaned = pasted.replace(/\r\n|\r/g, "\n");
-      setInput(pre.slice(0, pos) + cleaned + pre.slice(pos));
-      setCursorPos(pos + cleaned.length);
+      const next = pre.slice(0, pos) + cleaned + pre.slice(pos);
+      const newPos = pos + cleaned.length;
+      inputRef.current = next;
+      cursorPosRef.current = newPos;
+      setInput(next);
+      setCursorPos(newPos);
       setHistoryCursor(undefined);
       setTimeout(() => { inPasteRef.current = false; }, 0);
     };
@@ -125,15 +140,20 @@ export function App(props: AppProps): React.ReactElement {
         } else {
           pasteBufferRef.current += str;
         }
+        return;
       }
+      rawHandlerRef.current?.(str);
     };
 
     process.stdin.prependListener("data", onData);
     return () => {
       process.stdout.write("\x1b[?2004l");
       process.stdin.off("data", onData);
+      if (isRawModeSupported && setRawMode) {
+        setRawMode(false);
+      }
     };
-  }, []);
+  }, [isRawModeSupported, setRawMode]);
 
   useEffect(() => {
     if (props.startupNotice) {
@@ -413,8 +433,7 @@ export function App(props: AppProps): React.ReactElement {
 
     const recalled = nextCursor === undefined ? "" : history[nextCursor] ?? "";
     setHistoryCursor(nextCursor);
-    setInput(recalled);
-    setCursorPos(recalled.length);
+    setInputAndCursor(recalled, recalled.length);
     setNotice(undefined);
   }
 
@@ -430,8 +449,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     setNotice(undefined);
-    setInput("");
-    setCursorPos(0);
+    setInputAndCursor("", 0);
     setScrollOffset(0);
     setActiveWriteInfo(undefined);
     autoStoppedRef.current = false;
@@ -772,179 +790,6 @@ export function App(props: AppProps): React.ReactElement {
     }
   }
 
-  useInput((value, key) => {
-    if (inPasteRef.current) return;
-
-    if (key.ctrl && value === "c") {
-      exit();
-      return;
-    }
-
-    if (key.ctrl && value === "u") {
-      setInput("");
-      setCursorPos(0);
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-      return;
-    }
-
-    if (key.ctrl && value === "a") {
-      setCursorPos(0);
-      return;
-    }
-
-    if (key.ctrl && value === "e") {
-      setCursorPos(inputRef.current.length);
-      return;
-    }
-
-    if (key.ctrl && value === "k") {
-      const pos = cursorPosRef.current;
-      setInput((current) => current.slice(0, pos));
-      setHistoryCursor(undefined);
-      return;
-    }
-
-    if (key.ctrl && value === "w") {
-      const pos = cursorPosRef.current;
-      const current = inputRef.current;
-      if (pos === 0) return;
-      let newPos = pos;
-      while (newPos > 0 && current[newPos - 1] === " ") newPos--;
-      while (newPos > 0 && current[newPos - 1] !== " ") newPos--;
-      setInput(current.slice(0, newPos) + current.slice(pos));
-      setCursorPos(newPos);
-      setHistoryCursor(undefined);
-      return;
-    }
-
-    if (key.ctrl && value === "p") {
-      recallHistory("previous");
-      return;
-    }
-
-    if (key.ctrl && value === "n") {
-      recallHistory("next");
-      return;
-    }
-
-    if (key.ctrl && value === "v") {
-      const pasted = readClipboard().replace(/\r\n|\r/g, "\n");
-      if (pasted) {
-        const pos = cursorPosRef.current;
-        setInput((current) => current.slice(0, pos) + pasted + current.slice(pos));
-        setCursorPos(pos + pasted.length);
-        setHistoryCursor(undefined);
-        setNotice(undefined);
-      }
-      return;
-    }
-
-    if (key.escape) {
-      const now = Date.now();
-      if (running && now - lastEscAt.current < 1500) {
-        lastEscAt.current = 0;
-        void runner.cancel();
-        setTranscript((items) => [...items, textItem("system", "× run cancelled by user (Esc Esc)")]);
-        setNotice({ tone: "warning", text: "Run cancelled. Draft preserved." });
-        return;
-      }
-      lastEscAt.current = now;
-      if (!running) {
-        setInput("");
-        setCursorPos(0);
-        setHistoryCursor(undefined);
-        setNotice(undefined);
-      } else {
-        setNotice({ tone: "info", text: "Press Esc again within 1.5s to cancel the running model." });
-      }
-      return;
-    }
-
-    if (key.home) {
-      setCursorPos(0);
-      return;
-    }
-
-    if (key.end) {
-      setCursorPos(inputRef.current.length);
-      return;
-    }
-
-    if (key.upArrow) {
-      setScrollOffset((current) => current + 3);
-      return;
-    }
-
-    if (key.downArrow) {
-      setScrollOffset((current) => Math.max(0, current - 3));
-      return;
-    }
-
-    if (key.leftArrow) {
-      setCursorPos((p) => Math.max(0, p - 1));
-      return;
-    }
-
-    if (key.rightArrow) {
-      setCursorPos((p) => Math.min(inputRef.current.length, p + 1));
-      return;
-    }
-
-    if (key.pageUp) {
-      setScrollOffset((current) => current + Math.max(4, transcriptRows - 2));
-      return;
-    }
-
-    if (key.pageDown) {
-      setScrollOffset((current) => Math.max(0, current - Math.max(4, transcriptRows - 2)));
-      return;
-    }
-
-    if (key.tab && suggestions[0]) {
-      const completed = `/${suggestions[0].name} `;
-      setInput(completed);
-      setCursorPos(completed.length);
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-      return;
-    }
-
-    if (key.return) {
-      void submit(input);
-      return;
-    }
-
-    if (key.backspace) {
-      const pos = cursorPosRef.current;
-      if (pos === 0) return;
-      setInput((current) => current.slice(0, pos - 1) + current.slice(pos));
-      setCursorPos(pos - 1);
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-      return;
-    }
-
-    if (key.delete) {
-      const pos = cursorPosRef.current;
-      setInput((current) => {
-        if (pos >= current.length) return current;
-        return current.slice(0, pos) + current.slice(pos + 1);
-      });
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-      return;
-    }
-
-    if (value) {
-      const pos = cursorPosRef.current;
-      setInput((current) => current.slice(0, pos) + value + current.slice(pos));
-      setCursorPos(pos + value.length);
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-    }
-  });
-
   const bypass = config.permissionMode === "bypass";
   const compact = dim.rows < 20;
   const showNowLine = runView.status !== "idle";
@@ -976,6 +821,228 @@ export function App(props: AppProps): React.ReactElement {
     3 /* dock: separator + hint + input */;
 
   const transcriptRows = Math.max(4, dim.rows - reservedRows - 1);
+
+  function handleRawInput(str: string): void {
+    if (inPasteRef.current) return;
+    if (!str) return;
+
+    if (str === "\x03") {
+      exit();
+      return;
+    }
+
+    if (str === "\x04") {
+      exit();
+      return;
+    }
+
+    if (str === "\x15") {
+      setInputAndCursor("", 0);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (str === "\x01") {
+      cursorPosRef.current = 0;
+      setCursorPos(0);
+      return;
+    }
+
+    if (str === "\x05") {
+      const len = inputRef.current.length;
+      cursorPosRef.current = len;
+      setCursorPos(len);
+      return;
+    }
+
+    if (str === "\x0b") {
+      const pos = cursorPosRef.current;
+      const next = inputRef.current.slice(0, pos);
+      setInputAndCursor(next, pos);
+      setHistoryCursor(undefined);
+      return;
+    }
+
+    if (str === "\x17") {
+      const pos = cursorPosRef.current;
+      const cur = inputRef.current;
+      if (pos === 0) return;
+      let np = pos;
+      while (np > 0 && cur[np - 1] === " ") np--;
+      while (np > 0 && cur[np - 1] !== " ") np--;
+      setInputAndCursor(cur.slice(0, np) + cur.slice(pos), np);
+      setHistoryCursor(undefined);
+      return;
+    }
+
+    if (str === "\x10") {
+      recallHistory("previous");
+      return;
+    }
+
+    if (str === "\x0e") {
+      recallHistory("next");
+      return;
+    }
+
+    if (str === "\x16") {
+      const pasted = readClipboard().replace(/\r\n|\r/g, "\n");
+      if (pasted) {
+        const pos = cursorPosRef.current;
+        const cur = inputRef.current;
+        const next = cur.slice(0, pos) + pasted + cur.slice(pos);
+        setInputAndCursor(next, pos + pasted.length);
+        setHistoryCursor(undefined);
+        setNotice(undefined);
+      }
+      return;
+    }
+
+    if (str === "\x1b[D") {
+      const np = Math.max(0, cursorPosRef.current - 1);
+      cursorPosRef.current = np;
+      setCursorPos(np);
+      return;
+    }
+
+    if (str === "\x1b[C") {
+      const np = Math.min(inputRef.current.length, cursorPosRef.current + 1);
+      cursorPosRef.current = np;
+      setCursorPos(np);
+      return;
+    }
+
+    if (str === "\x1bb" || str === "\x1b[1;5D" || str === "\x1b[1;3D") {
+      const pos = cursorPosRef.current;
+      const cur = inputRef.current;
+      let np = pos;
+      while (np > 0 && cur[np - 1] === " ") np--;
+      while (np > 0 && cur[np - 1] !== " ") np--;
+      cursorPosRef.current = np;
+      setCursorPos(np);
+      return;
+    }
+
+    if (str === "\x1bf" || str === "\x1b[1;5C" || str === "\x1b[1;3C") {
+      const pos = cursorPosRef.current;
+      const cur = inputRef.current;
+      let np = pos;
+      while (np < cur.length && cur[np] === " ") np++;
+      while (np < cur.length && cur[np] !== " ") np++;
+      cursorPosRef.current = np;
+      setCursorPos(np);
+      return;
+    }
+
+    if (str === "\x1b[A") {
+      setScrollOffset((c) => c + 3);
+      return;
+    }
+
+    if (str === "\x1b[B") {
+      setScrollOffset((c) => Math.max(0, c - 3));
+      return;
+    }
+
+    if (str === "\x1b[H" || str === "\x1b[1~" || str === "\x1b[7~") {
+      cursorPosRef.current = 0;
+      setCursorPos(0);
+      return;
+    }
+
+    if (str === "\x1b[F" || str === "\x1b[4~" || str === "\x1b[8~") {
+      const len = inputRef.current.length;
+      cursorPosRef.current = len;
+      setCursorPos(len);
+      return;
+    }
+
+    if (str === "\x1b[5~") {
+      setScrollOffset((c) => c + Math.max(4, transcriptRows - 2));
+      return;
+    }
+
+    if (str === "\x1b[6~") {
+      setScrollOffset((c) => Math.max(0, c - Math.max(4, transcriptRows - 2)));
+      return;
+    }
+
+    if (str === "\x1b[3~") {
+      const pos = cursorPosRef.current;
+      const cur = inputRef.current;
+      if (pos >= cur.length) return;
+      setInputAndCursor(cur.slice(0, pos) + cur.slice(pos + 1), pos);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (str === "\x7f" || str === "\b") {
+      const pos = cursorPosRef.current;
+      if (pos === 0) return;
+      const cur = inputRef.current;
+      setInputAndCursor(cur.slice(0, pos - 1) + cur.slice(pos), pos - 1);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (str === "\r" || str === "\n") {
+      void submit(inputRef.current);
+      return;
+    }
+
+    if (str === "\t") {
+      if (suggestions[0]) {
+        const completed = `/${suggestions[0].name} `;
+        setInputAndCursor(completed, completed.length);
+        setHistoryCursor(undefined);
+        setNotice(undefined);
+      }
+      return;
+    }
+
+    if (str === "\x1b") {
+      const now = Date.now();
+      if (running && now - lastEscAt.current < 1500) {
+        lastEscAt.current = 0;
+        void runner.cancel();
+        setTranscript((items) => [...items, textItem("system", "× run cancelled by user (Esc Esc)")]);
+        setNotice({ tone: "warning", text: "Run cancelled. Draft preserved." });
+        return;
+      }
+      lastEscAt.current = now;
+      if (!running) {
+        setInputAndCursor("", 0);
+        setHistoryCursor(undefined);
+        setNotice(undefined);
+      } else {
+        setNotice({ tone: "info", text: "Press Esc again within 1.5s to cancel the running model." });
+      }
+      return;
+    }
+
+    if (str.startsWith("\x1b")) return;
+
+    let printable = "";
+    for (const ch of str) {
+      const code = ch.charCodeAt(0);
+      if (code >= 32 || ch === "\n") {
+        printable += ch === "\n" ? "" : ch;
+      }
+    }
+    if (!printable) return;
+
+    const pos = cursorPosRef.current;
+    const cur = inputRef.current;
+    const next = cur.slice(0, pos) + printable + cur.slice(pos);
+    setInputAndCursor(next, pos + printable.length);
+    setHistoryCursor(undefined);
+    setNotice(undefined);
+  }
+
+  rawHandlerRef.current = handleRawInput;
 
   return (
     <Box flexDirection="column" width={dim.columns}>
