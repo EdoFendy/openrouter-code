@@ -21,10 +21,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.1.4] — 2026-04-29
+## [0.1.5] — 2026-04-29
 
-### Changed
-- **Input bar — full rewrite**: dropped Ink's `useInput` (which mis-parsed `Ctrl+V` as the letter "v", lost cursor position between rapid keypresses, and dropped paste sequences). Replaced with a single raw stdin handler that parses byte sequences directly (`\x1b[D`/`\x1b[C` arrows, `\x7f` backspace, `\x1b[3~` delete, `\x1b[1;5D`/`\x1b[1;5C` Ctrl-arrow word jump, `\x1bb`/`\x1bf` Alt-arrow word jump, `\x1b[H`/`\x1b[F` Home/End, etc.) and synchronously updates `inputRef`/`cursorPosRef` on every mutation. No more stale-ref bugs: cursor moves, backspace/delete at cursor, word kill, and paste all work as in any normal terminal. Raw mode is now flipped via `useStdin` so Ink doesn't fight the handler.
+### Fixed
+- **Input bar — cross-platform fix**: kept Ink's `useInput` (best Windows cmd / PowerShell / Windows Terminal compatibility) but fixed the underlying stale-ref bug. Every cursor / input mutation now synchronously updates `inputRef.current` and `cursorPosRef.current` *before* calling `setState`, so the next keypress always reads current values. Result: `←/→` cursor movement, `Backspace`/`Delete` at cursor, `Ctrl+A/E/K/W`, `Home/End`, paste, and typing all behave like a normal terminal on macOS, Linux, and Windows.
+- **Ctrl+V (Windows + macOS)**: still uses native clipboard (`pbpaste` / `Get-Clipboard` / `xclip`) and inserts at cursor.
+
+### Notes
+- An earlier attempt (v0.1.4 — never published) replaced `useInput` with a raw stdin byte parser. That broke Windows cmd because Node's raw mode + ANSI translation isn't reliable on Windows consoles. Reverted to `useInput` with synchronous ref sync — same fix, portable.
 
 ---
 
@@ -76,8 +80,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.4...HEAD
-[0.1.4]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...v0.1.4
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.0...v0.1.1

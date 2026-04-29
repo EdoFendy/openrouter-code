@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Box, useApp, useStdin } from "ink";
+import { Box, useApp, useInput } from "ink";
 import type { OrCodeConfig } from "../config.js";
 import type { ModelRegistry } from "../openrouter/model-registry.js";
 import { AgentRunner, CancelledError } from "../runtime/agent-runner.js";
@@ -55,7 +55,6 @@ export type AppProps = {
 
 export function App(props: AppProps): React.ReactElement {
   const { exit } = useApp();
-  const { setRawMode, isRawModeSupported } = useStdin();
   const [config, setConfig] = useState(props.initialConfig);
   const [sessionId, setSessionId] = useState(props.initialSessionId);
   const [input, setInput] = useState("");
@@ -85,7 +84,6 @@ export function App(props: AppProps): React.ReactElement {
   const prePasteInputRef = useRef("");
   const prePasteCursorRef = useRef(0);
   const inputRef = useRef("");
-  const rawHandlerRef = useRef<((str: string) => void) | undefined>(undefined);
 
   useEffect(() => { inputRef.current = input; }, [input]);
 
@@ -98,9 +96,6 @@ export function App(props: AppProps): React.ReactElement {
 
   useEffect(() => {
     if (!process.stdout.isTTY) return;
-    if (isRawModeSupported && setRawMode) {
-      setRawMode(true);
-    }
     process.stdout.write("\x1b[?2004h");
 
     const applyPaste = (pasted: string): void => {
@@ -140,20 +135,15 @@ export function App(props: AppProps): React.ReactElement {
         } else {
           pasteBufferRef.current += str;
         }
-        return;
       }
-      rawHandlerRef.current?.(str);
     };
 
     process.stdin.prependListener("data", onData);
     return () => {
       process.stdout.write("\x1b[?2004l");
       process.stdin.off("data", onData);
-      if (isRawModeSupported && setRawMode) {
-        setRawMode(false);
-      }
     };
-  }, [isRawModeSupported, setRawMode]);
+  }, []);
 
   useEffect(() => {
     if (props.startupNotice) {
@@ -822,41 +812,35 @@ export function App(props: AppProps): React.ReactElement {
 
   const transcriptRows = Math.max(4, dim.rows - reservedRows - 1);
 
-  function handleRawInput(str: string): void {
+  useInput((value, key) => {
     if (inPasteRef.current) return;
-    if (!str) return;
 
-    if (str === "\x03") {
+    if (key.ctrl && value === "c") {
       exit();
       return;
     }
 
-    if (str === "\x04") {
-      exit();
-      return;
-    }
-
-    if (str === "\x15") {
+    if (key.ctrl && value === "u") {
       setInputAndCursor("", 0);
       setHistoryCursor(undefined);
       setNotice(undefined);
       return;
     }
 
-    if (str === "\x01") {
+    if (key.ctrl && value === "a") {
       cursorPosRef.current = 0;
       setCursorPos(0);
       return;
     }
 
-    if (str === "\x05") {
+    if (key.ctrl && value === "e") {
       const len = inputRef.current.length;
       cursorPosRef.current = len;
       setCursorPos(len);
       return;
     }
 
-    if (str === "\x0b") {
+    if (key.ctrl && value === "k") {
       const pos = cursorPosRef.current;
       const next = inputRef.current.slice(0, pos);
       setInputAndCursor(next, pos);
@@ -864,7 +848,7 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (str === "\x17") {
+    if (key.ctrl && value === "w") {
       const pos = cursorPosRef.current;
       const cur = inputRef.current;
       if (pos === 0) return;
@@ -876,17 +860,17 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (str === "\x10") {
+    if (key.ctrl && value === "p") {
       recallHistory("previous");
       return;
     }
 
-    if (str === "\x0e") {
+    if (key.ctrl && value === "n") {
       recallHistory("next");
       return;
     }
 
-    if (str === "\x16") {
+    if (key.ctrl && value === "v") {
       const pasted = readClipboard().replace(/\r\n|\r/g, "\n");
       if (pasted) {
         const pos = cursorPosRef.current;
@@ -899,111 +883,7 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (str === "\x1b[D") {
-      const np = Math.max(0, cursorPosRef.current - 1);
-      cursorPosRef.current = np;
-      setCursorPos(np);
-      return;
-    }
-
-    if (str === "\x1b[C") {
-      const np = Math.min(inputRef.current.length, cursorPosRef.current + 1);
-      cursorPosRef.current = np;
-      setCursorPos(np);
-      return;
-    }
-
-    if (str === "\x1bb" || str === "\x1b[1;5D" || str === "\x1b[1;3D") {
-      const pos = cursorPosRef.current;
-      const cur = inputRef.current;
-      let np = pos;
-      while (np > 0 && cur[np - 1] === " ") np--;
-      while (np > 0 && cur[np - 1] !== " ") np--;
-      cursorPosRef.current = np;
-      setCursorPos(np);
-      return;
-    }
-
-    if (str === "\x1bf" || str === "\x1b[1;5C" || str === "\x1b[1;3C") {
-      const pos = cursorPosRef.current;
-      const cur = inputRef.current;
-      let np = pos;
-      while (np < cur.length && cur[np] === " ") np++;
-      while (np < cur.length && cur[np] !== " ") np++;
-      cursorPosRef.current = np;
-      setCursorPos(np);
-      return;
-    }
-
-    if (str === "\x1b[A") {
-      setScrollOffset((c) => c + 3);
-      return;
-    }
-
-    if (str === "\x1b[B") {
-      setScrollOffset((c) => Math.max(0, c - 3));
-      return;
-    }
-
-    if (str === "\x1b[H" || str === "\x1b[1~" || str === "\x1b[7~") {
-      cursorPosRef.current = 0;
-      setCursorPos(0);
-      return;
-    }
-
-    if (str === "\x1b[F" || str === "\x1b[4~" || str === "\x1b[8~") {
-      const len = inputRef.current.length;
-      cursorPosRef.current = len;
-      setCursorPos(len);
-      return;
-    }
-
-    if (str === "\x1b[5~") {
-      setScrollOffset((c) => c + Math.max(4, transcriptRows - 2));
-      return;
-    }
-
-    if (str === "\x1b[6~") {
-      setScrollOffset((c) => Math.max(0, c - Math.max(4, transcriptRows - 2)));
-      return;
-    }
-
-    if (str === "\x1b[3~") {
-      const pos = cursorPosRef.current;
-      const cur = inputRef.current;
-      if (pos >= cur.length) return;
-      setInputAndCursor(cur.slice(0, pos) + cur.slice(pos + 1), pos);
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-      return;
-    }
-
-    if (str === "\x7f" || str === "\b") {
-      const pos = cursorPosRef.current;
-      if (pos === 0) return;
-      const cur = inputRef.current;
-      setInputAndCursor(cur.slice(0, pos - 1) + cur.slice(pos), pos - 1);
-      setHistoryCursor(undefined);
-      setNotice(undefined);
-      return;
-    }
-
-    if (str === "\r" || str === "\n") {
-      void submit(inputRef.current);
-      return;
-    }
-
-    if (str === "\t") {
-      if (suggestions[0]) {
-        const completed = `/${suggestions[0].name} `;
-        setInputAndCursor(completed, completed.length);
-        setHistoryCursor(undefined);
-        setNotice(undefined);
-      }
-      return;
-    }
-
-    if (str === "\x1b") {
+    if (key.escape) {
       const now = Date.now();
       if (running && now - lastEscAt.current < 1500) {
         lastEscAt.current = 0;
@@ -1023,26 +903,94 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (str.startsWith("\x1b")) return;
-
-    let printable = "";
-    for (const ch of str) {
-      const code = ch.charCodeAt(0);
-      if (code >= 32 || ch === "\n") {
-        printable += ch === "\n" ? "" : ch;
-      }
+    if (key.home) {
+      cursorPosRef.current = 0;
+      setCursorPos(0);
+      return;
     }
-    if (!printable) return;
 
-    const pos = cursorPosRef.current;
-    const cur = inputRef.current;
-    const next = cur.slice(0, pos) + printable + cur.slice(pos);
-    setInputAndCursor(next, pos + printable.length);
-    setHistoryCursor(undefined);
-    setNotice(undefined);
-  }
+    if (key.end) {
+      const len = inputRef.current.length;
+      cursorPosRef.current = len;
+      setCursorPos(len);
+      return;
+    }
 
-  rawHandlerRef.current = handleRawInput;
+    if (key.upArrow) {
+      setScrollOffset((c) => c + 3);
+      return;
+    }
+
+    if (key.downArrow) {
+      setScrollOffset((c) => Math.max(0, c - 3));
+      return;
+    }
+
+    if (key.leftArrow) {
+      const np = Math.max(0, cursorPosRef.current - 1);
+      cursorPosRef.current = np;
+      setCursorPos(np);
+      return;
+    }
+
+    if (key.rightArrow) {
+      const np = Math.min(inputRef.current.length, cursorPosRef.current + 1);
+      cursorPosRef.current = np;
+      setCursorPos(np);
+      return;
+    }
+
+    if (key.pageUp) {
+      setScrollOffset((c) => c + Math.max(4, transcriptRows - 2));
+      return;
+    }
+
+    if (key.pageDown) {
+      setScrollOffset((c) => Math.max(0, c - Math.max(4, transcriptRows - 2)));
+      return;
+    }
+
+    if (key.tab && suggestions[0]) {
+      const completed = `/${suggestions[0].name} `;
+      setInputAndCursor(completed, completed.length);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (key.return) {
+      void submit(inputRef.current);
+      return;
+    }
+
+    if (key.backspace) {
+      const pos = cursorPosRef.current;
+      if (pos === 0) return;
+      const cur = inputRef.current;
+      setInputAndCursor(cur.slice(0, pos - 1) + cur.slice(pos), pos - 1);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (key.delete) {
+      const pos = cursorPosRef.current;
+      const cur = inputRef.current;
+      if (pos >= cur.length) return;
+      setInputAndCursor(cur.slice(0, pos) + cur.slice(pos + 1), pos);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+      return;
+    }
+
+    if (value) {
+      const pos = cursorPosRef.current;
+      const cur = inputRef.current;
+      setInputAndCursor(cur.slice(0, pos) + value + cur.slice(pos), pos + value.length);
+      setHistoryCursor(undefined);
+      setNotice(undefined);
+    }
+  });
 
   return (
     <Box flexDirection="column" width={dim.columns}>
