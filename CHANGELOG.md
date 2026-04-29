@@ -21,6 +21,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.6] — 2026-04-29
+
+### Fixed
+- **Input handler re-registration on Windows**: Ink's `useInput` re-registers the keypress listener on every render (because the callback is a new function each render). On Windows, the remove+add sequence has a window where keypresses are dropped — causing backspace/arrows to appear broken. Fixed with `useCallback([], [])` + `handleInputRef.current` pattern: `useInput` registers exactly once, `handleInputRef.current` is updated each render to always have fresh closures. No more missed keys.
+- **Cursor rendering on Windows cmd.exe**: replaced `<Text inverse>` block cursor (which requires VT inverse-video escape sequence, broken on legacy Windows consoles) with a plain `|` ASCII caret. Also replaced `─` box-drawing separator with `-` and `❯` prompt with `>` for maximum console compatibility.
+
+---
+
 ## [0.1.5] — 2026-04-29
 
 ### Fixed
@@ -80,7 +88,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.1...v0.1.2

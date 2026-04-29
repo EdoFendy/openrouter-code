@@ -16,18 +16,18 @@ export function Dock(props: DockProps): React.ReactElement {
   const showPalette = props.input.trim().startsWith("/") && props.suggestions.length > 0;
   const cursor = Math.min(Math.max(0, props.cursorPos), props.input.length);
   const before = props.input.slice(0, cursor);
-  const atCursor = props.input[cursor] ?? " ";
-  const after = props.input.slice(cursor + 1);
+  const after = props.input.slice(cursor);
+  const sep = "-".repeat(Math.max(20, props.columns));
 
   return (
     <Box flexDirection="column">
       {showPalette ? <Palette suggestions={props.suggestions} columns={props.columns} /> : null}
-      <Text color="gray">{"─".repeat(Math.max(20, props.columns))}</Text>
+      <Text color="gray">{sep}</Text>
       <HintLine running={props.running} hasApiKey={props.hasApiKey} suggestions={props.suggestions} />
       <Box>
-        <Text color={promptColor}>❯ </Text>
+        <Text color={promptColor}>{">"} </Text>
         <Text color={promptColor}>{before}</Text>
-        <Text inverse>{atCursor}</Text>
+        <Text color="white" bold>{"|"}</Text>
         <Text color={promptColor}>{after}</Text>
       </Box>
     </Box>

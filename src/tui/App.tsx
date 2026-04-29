@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Box, useApp, useInput } from "ink";
+import type { Key } from "ink";
 import type { OrCodeConfig } from "../config.js";
 import type { ModelRegistry } from "../openrouter/model-registry.js";
 import { AgentRunner, CancelledError } from "../runtime/agent-runner.js";
@@ -84,8 +85,15 @@ export function App(props: AppProps): React.ReactElement {
   const prePasteInputRef = useRef("");
   const prePasteCursorRef = useRef(0);
   const inputRef = useRef("");
+  const handleInputRef = useRef<((value: string, key: Key) => void) | undefined>(undefined);
 
   useEffect(() => { inputRef.current = input; }, [input]);
+
+  const stableInputHandler = useCallback((value: string, key: Key) => {
+    handleInputRef.current?.(value, key);
+  }, []);
+
+  useInput(stableInputHandler);
 
   function setInputAndCursor(next: string, pos: number): void {
     inputRef.current = next;
@@ -812,7 +820,7 @@ export function App(props: AppProps): React.ReactElement {
 
   const transcriptRows = Math.max(4, dim.rows - reservedRows - 1);
 
-  useInput((value, key) => {
+  handleInputRef.current = (value: string, key: Key): void => {
     if (inPasteRef.current) return;
 
     if (key.ctrl && value === "c") {
@@ -990,7 +998,7 @@ export function App(props: AppProps): React.ReactElement {
       setHistoryCursor(undefined);
       setNotice(undefined);
     }
-  });
+  };
 
   return (
     <Box flexDirection="column" width={dim.columns}>
