@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Box, useApp, useInput } from "ink";
-import type { Key } from "ink";
+import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import readline from "node:readline";
+import { Box, useApp } from "ink";
+import { shim, type InkLikeKey } from "./keypress.js";
 import type { OrCodeConfig } from "../config.js";
 import type { ModelRegistry } from "../openrouter/model-registry.js";
 import { AgentRunner, CancelledError } from "../runtime/agent-runner.js";
@@ -85,15 +86,31 @@ export function App(props: AppProps): React.ReactElement {
   const prePasteInputRef = useRef("");
   const prePasteCursorRef = useRef(0);
   const inputRef = useRef("");
-  const handleInputRef = useRef<((value: string, key: Key) => void) | undefined>(undefined);
+  const handleInputRef = useRef<((value: string, key: InkLikeKey) => void) | undefined>(undefined);
 
   useEffect(() => { inputRef.current = input; }, [input]);
 
-  const stableInputHandler = useCallback((value: string, key: Key) => {
-    handleInputRef.current?.(value, key);
+  useEffect(() => {
+    if (!process.stdin.isTTY) return;
+    readline.emitKeypressEvents(process.stdin);
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    const onKeypress = (
+      str: string | undefined,
+      k: { name?: string; ctrl?: boolean; meta?: boolean; shift?: boolean; sequence?: string } | undefined
+    ): void => {
+      if (inPasteRef.current) return;
+      const { value, key } = shim(str, k);
+      handleInputRef.current?.(value, key);
+    };
+    process.stdin.on("keypress", onKeypress);
+    return () => {
+      process.stdin.off("keypress", onKeypress);
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+    };
   }, []);
-
-  useInput(stableInputHandler);
 
   function setInputAndCursor(next: string, pos: number): void {
     inputRef.current = next;
@@ -820,7 +837,7 @@ export function App(props: AppProps): React.ReactElement {
 
   const transcriptRows = Math.max(4, dim.rows - reservedRows - 1);
 
-  handleInputRef.current = (value: string, key: Key): void => {
+  handleInputRef.current = (value: string, key: InkLikeKey): void => {
     if (inPasteRef.current) return;
 
     if (key.ctrl && value === "c") {

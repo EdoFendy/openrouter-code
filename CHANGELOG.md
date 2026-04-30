@@ -21,6 +21,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.7] — 2026-04-30
+
+### Fixed
+- **Windows input bar — root-cause fix**: replaced Ink's `useInput` (which feeds stdin chunks into a custom ANSI parser with a `setImmediate` flush of incomplete escape sequences — Ink v6.8.0 `App.js:91-98`) with Node's built-in `readline.emitKeypressEvents` + `'keypress'` event. On Windows cmd.exe, `setRawMode(true)` is libuv emulation and the console driver splits ESC sequences across multiple `'readable'` events; Ink's pending-flush would discard the partial sequence before the rest arrived → arrow keys, Home/End, etc. silently dropped. Node readline's keypress parser uses a generator-based state machine that correctly joins partial chunks, which is what npm/jest/etc. rely on. A small shim (`src/tui/keypress.ts`) translates Node's `{name, ctrl, meta}` keypress shape into the existing Ink-style `Key` object, so the 30-binding handler in `App.tsx` is preserved unchanged.
+
+### Notes
+- macOS Terminal / Linux behavior unchanged — readline's parser handles those identically.
+- Bracketed paste path (`prependListener('data', ...)`) kept verbatim; `inPasteRef` short-circuits the keypress handler during paste so paste content isn't double-inserted.
+
+---
+
 ## [0.1.6] — 2026-04-29
 
 ### Fixed
@@ -88,7 +99,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.2...v0.1.3

@@ -1,4 +1,4 @@
 {
-  "defaultModel": "deepseek/deepseek-v4-pro",
+  "defaultModel": "moonshotai/kimi-k2.6",
   "permissionMode": "bypass"
 }
