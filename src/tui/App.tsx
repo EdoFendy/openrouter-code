@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import readline from "node:readline";
 import { Box, useApp } from "ink";
 import { shim, type InkLikeKey } from "./keypress.js";
+import { logKeypress, logBytes, logEvent } from "./debug-input.js";
 import type { OrCodeConfig } from "../config.js";
 import type { ModelRegistry } from "../openrouter/model-registry.js";
 import { AgentRunner, CancelledError } from "../runtime/agent-runner.js";
@@ -91,14 +92,22 @@ export function App(props: AppProps): React.ReactElement {
   useEffect(() => { inputRef.current = input; }, [input]);
 
   useEffect(() => {
-    if (!process.stdin.isTTY) return;
+    if (!process.stdin.isTTY) {
+      logEvent("keypress-effect skipped: stdin not TTY");
+      return;
+    }
     readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
+    const rawSupported = Boolean(process.stdin.setRawMode);
+    if (rawSupported) {
+      process.stdin.setRawMode(true);
+    }
     process.stdin.resume();
+    logEvent("keypress-effect mounted", { rawSupported, isRaw: process.stdin.isRaw });
     const onKeypress = (
       str: string | undefined,
       k: { name?: string; ctrl?: boolean; meta?: boolean; shift?: boolean; sequence?: string } | undefined
     ): void => {
+      logKeypress(str, k);
       if (inPasteRef.current) return;
       const { value, key } = shim(str, k);
       handleInputRef.current?.(value, key);
@@ -106,9 +115,10 @@ export function App(props: AppProps): React.ReactElement {
     process.stdin.on("keypress", onKeypress);
     return () => {
       process.stdin.off("keypress", onKeypress);
-      if (process.stdin.isTTY) {
+      if (process.stdin.isTTY && rawSupported) {
         process.stdin.setRawMode(false);
       }
+      logEvent("keypress-effect unmounted");
     };
   }, []);
 
@@ -139,6 +149,7 @@ export function App(props: AppProps): React.ReactElement {
 
     const onData = (chunk: Buffer | string) => {
       const str = typeof chunk === "string" ? chunk : chunk.toString("utf8");
+      logBytes("stdin.data", chunk);
       if (!inPasteRef.current && str.includes("\x1b[200~")) {
         inPasteRef.current = true;
         prePasteInputRef.current = inputRef.current;

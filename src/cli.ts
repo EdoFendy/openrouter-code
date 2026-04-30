@@ -9,6 +9,7 @@ import { SessionStore } from "./session/session-store.js";
 import { defaultSkillDirs, SkillRegistry } from "./skills/skill-registry.js";
 import { AgentRegistry, defaultAgentDirs } from "./agents/agent-registry.js";
 import { runTui } from "./tui/render.js";
+import { initDebugInput } from "./tui/debug-input.js";
 import { readableError } from "./types.js";
 
 type SessionMode = { kind: "new" } | { kind: "continue" } | { kind: "resume"; id: string };
@@ -106,6 +107,11 @@ async function main(): Promise<void> {
   await skillRegistry.scan();
   const agentRegistry = new AgentRegistry(defaultAgentDirs(cwd));
   await agentRegistry.scan();
+
+  const debugLogPath = initDebugInput();
+  if (debugLogPath) {
+    process.stdout.write(`[debug] OR_CODE_DEBUG_INPUT=1 — logging to ${debugLogPath}\n`);
+  }
 
   runTui({
     cwd,

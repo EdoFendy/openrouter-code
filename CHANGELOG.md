@@ -21,6 +21,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.8] — 2026-04-30
+
+### Added
+- **Input debug logging**: set `OR_CODE_DEBUG_INPUT=1` to log every stdin byte sequence + every readline keypress event to `~/.orcode/keypress.log`. Captures startup info (platform, isTTY, raw mode supported, terminal env), every `stdin.data` chunk as hex + readable string, and every `keypress` event as JSON. Used for diagnosing platform-specific input issues (e.g., Windows VPS RDP terminals where raw mode behavior differs).
+
+---
+
 ## [0.1.7] — 2026-04-30
 
 ### Fixed
@@ -99,7 +106,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.3...v0.1.5
