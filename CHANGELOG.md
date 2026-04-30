@@ -21,6 +21,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.9] — 2026-04-30
+
+### Fixed
+- **Bracketed paste leak on Windows**: `\x1b[?2004h` was written to stdout on every startup; on Windows VPS terminals without VT/ANSI processing this prints as visible garbage (`←[?2004h`) and bracketed paste markers (`←[200~`) appear before any pasted text. Now skipped entirely on Windows. macOS/Linux behavior unchanged.
+
+### Added
+- **Raw-mode diagnostics**: keypress effect now logs `setRawMode` success/failure (with try/catch), `process.stdin.isRaw` post-call, and `process.stdout.hasColors()` when `OR_CODE_DEBUG_INPUT=1`. Used to diagnose terminals where raw mode silently fails (Windows VPS RDP).
+
+---
+
 ## [0.1.8] — 2026-04-30
 
 ### Added
@@ -106,7 +116,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Cost tracking** — OpenRouter usage parsed; `maxCostUsd` budget enforcement.
 - Full TypeScript strict codebase, Vitest test suite, ESLint, CI (GitHub Actions).
 
-[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/EdoFendy/openrouter-code/compare/v0.1.5...v0.1.6

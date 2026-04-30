@@ -97,12 +97,24 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
     readline.emitKeypressEvents(process.stdin);
-    const rawSupported = Boolean(process.stdin.setRawMode);
+    const rawSupported = typeof process.stdin.setRawMode === "function";
+    let rawSetOk = false;
     if (rawSupported) {
-      process.stdin.setRawMode(true);
+      try {
+        process.stdin.setRawMode(true);
+        rawSetOk = true;
+      } catch (err) {
+        logEvent("setRawMode threw", String(err));
+      }
     }
     process.stdin.resume();
-    logEvent("keypress-effect mounted", { rawSupported, isRaw: process.stdin.isRaw });
+    logEvent("keypress-effect mounted", {
+      rawSupported,
+      rawSetOk,
+      isRaw: process.stdin.isRaw,
+      platform: process.platform,
+      stdoutHasColors: typeof process.stdout.hasColors === "function" ? process.stdout.hasColors() : "n/a"
+    });
     const onKeypress = (
       str: string | undefined,
       k: { name?: string; ctrl?: boolean; meta?: boolean; shift?: boolean; sequence?: string } | undefined
@@ -116,7 +128,7 @@ export function App(props: AppProps): React.ReactElement {
     return () => {
       process.stdin.off("keypress", onKeypress);
       if (process.stdin.isTTY && rawSupported) {
-        process.stdin.setRawMode(false);
+        try { process.stdin.setRawMode(false); } catch { /* ignore */ }
       }
       logEvent("keypress-effect unmounted");
     };
@@ -131,6 +143,10 @@ export function App(props: AppProps): React.ReactElement {
 
   useEffect(() => {
     if (!process.stdout.isTTY) return;
+    if (process.platform === "win32") {
+      logEvent("bracketed-paste skipped: platform=win32");
+      return;
+    }
     process.stdout.write("\x1b[?2004h");
 
     const applyPaste = (pasted: string): void => {
